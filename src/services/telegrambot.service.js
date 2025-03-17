@@ -1,50 +1,29 @@
 import TelegramBot from "node-telegram-bot-api";
 import { logger } from "../utils/logger.js";
+import { MessageHandlerService } from "./messagehandler.service.js";
+import { CommandHandlerService } from "./command.service.js";
 
 export class TelegramBotService {
-  constructor(token) {
+  constructor(token, groqService) {
+    logger.warn("Telegram token is not set in .env file");
     if (!token) {
       throw new Error("Telegram token is not set in .env file");
     }
+    if (!groqService) {
+      logger.warn("Groq API key is not set in .env file");
+      throw new Error("Groq API key is not set in .env file");
+    }
     this.bot = new TelegramBot(token, { polling: true });
+    this.groqService = groqService;
+    this.messageService = new MessageHandlerService(this.bot, this.groqService);
+    this.commandHandler = new CommandHandlerService(this.bot);
     this.handleSetupListeners();
   }
 
   handleSetupListeners() {
-    this.onTextStart();
-    this.onMessage();
-    this.onText();
-  }
-
-  onTextStart() {
-    this.bot.onText(/\/start/, (msg) => {
-      this.bot.sendMessage(
-        msg.chat.id,
-        "Hello! I am your Telegram bot. How can I help you today?"
-      );
-    });
-  }
-
-  onMessage() {
-    this.bot.on("message", (message) => {
-      const { chat, text } = message;
-      const chatId = chat.id;
-
-      logger.log(`Received message: ${text}`);
-      this.bot.sendMessage(
-        chatId,
-        ` 'Received your message, you said: ${text}`
-      );
-    });
-  }
-
-  onText() {
-    this.bot.onText(/\/echo (.+)/, (msg, match) => {
-      const chatId = msg.chat.id;
-      const response = match[1];
-
-      this.bot.sendMessage(chatId, `Echo: ${response}`);
-    });
+    this.commandHandler.onTextStart();
+    this.messageService.onMessage();
+    this.commandHandler.onText();
   }
 
   start() {
