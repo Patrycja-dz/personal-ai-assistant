@@ -6,9 +6,11 @@ import { CommandHandlerService } from "./command.service.js";
 export class TelegramBotService {
   constructor(token, groqService) {
     if (!token) {
+      logger.warn("Telegram token is not set in .env file");
       throw new Error("Telegram token is not set in .env file");
     }
     if (!groqService) {
+      logger.warn("Groq API key is not set in .env file");
       throw new Error("Groq API key is not set in .env file");
     }
     this.bot = new TelegramBot(token, { polling: true });
