@@ -1,4 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
+import { logger } from "../utils/logger.js";
 
 export class TelegramBotService {
   constructor(token) {
@@ -29,7 +30,7 @@ export class TelegramBotService {
       const { chat, text } = message;
       const chatId = chat.id;
 
-      console.log(`Received message: ${text}`);
+      logger.log(`Received message: ${text}`);
       this.bot.sendMessage(
         chatId,
         ` 'Received your message, you said: ${text}`
@@ -47,6 +48,6 @@ export class TelegramBotService {
   }
 
   start() {
-    console.log("Telegram bot has been started");
+    logger.log("Telegram bot has been started");
   }
 }
