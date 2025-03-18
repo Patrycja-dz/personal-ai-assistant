@@ -15,8 +15,13 @@ export class TelegramBotService {
     }
     this.bot = new TelegramBot(token, { polling: true });
     this.groqService = groqService;
-    this.messageService = new MessageHandlerService(this.bot, this.groqService);
+    this.messageService = new MessageHandlerService(
+      this.bot,
+      this.groqService,
+      this
+    );
     this.commandHandler = new CommandHandlerService(this.bot);
+    this.chatHistory = [];
     this.handleSetupListeners();
   }
 
@@ -28,5 +33,13 @@ export class TelegramBotService {
 
   start() {
     logger.log("Telegram bot has been started");
+  }
+
+  addMessageToChatHistory(message, role) {
+    this.chatHistory.push({ role, message });
+
+    if (this.chatHistory.length > 10) {
+      this.chatHistory.shift();
+    }
   }
 }
