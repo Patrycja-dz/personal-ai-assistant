@@ -10,3 +10,5 @@ export const CHAT_TEMPERATURE = parseFloat(process.env.CHAT_TEMPERATURE) || 0.5;
 export const CHAT_MAX_COMPLETION_TOKENS =
   parseInt(process.env.CHAT_MAX_COMPLETION_TOKENS) || 1024;
 export const CHAT_TOP_P = parseFloat(process.env.CHAT_TOP_P) || 1;
+export const VISION_CHAT_MODEL =
+  process.env.VISION_MODEL || "llama-3.3-70b-versatile";
