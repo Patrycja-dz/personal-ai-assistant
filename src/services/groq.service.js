@@ -5,7 +5,9 @@ import {
   CHAT_MODEL,
   CHAT_TEMPERATURE,
   CHAT_TOP_P,
+  VISION_CHAT_MODEL,
 } from "../config/config.js";
+import { logger } from "../utils/logger.js";
 
 export class GroqService extends IModelService {
   constructor(apiKey) {
@@ -24,7 +26,11 @@ export class GroqService extends IModelService {
     }
 
     const messages = [
-      { role: "system", content: "you are a helpful assistant." },
+      {
+        role: "system",
+        content:
+          "You are a helpful assistant. Reply in the same language as the user.",
+      },
       ...chatHistory.map((message) => ({
         role: message.role,
         content: message.message,
@@ -34,6 +40,7 @@ export class GroqService extends IModelService {
         content: text,
       },
     ];
+
     const response = await this.groq.chat.completions.create({
       messages: messages,
       model: CHAT_MODEL,
@@ -41,6 +48,44 @@ export class GroqService extends IModelService {
       max_completion_tokens: CHAT_MAX_COMPLETION_TOKENS,
       top_p: CHAT_TOP_P,
     });
+
+    return response;
+  }
+  async visionComplete(image_url, chatHistory) {
+    const messages = [
+      {
+        role: "system",
+        content:
+          "You are a helpful assistant. Reply in the same language as the user.",
+      },
+      ...chatHistory.map((message) => ({
+        role: message.role,
+        content: message.message,
+      })),
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Co znajduje się na tym obrazku?",
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: image_url,
+            },
+          },
+        ],
+      },
+    ];
+    const response = await this.groq.chat.completions.create({
+      messages: messages,
+      model: VISION_CHAT_MODEL,
+      temperature: CHAT_TEMPERATURE,
+      max_completion_tokens: CHAT_MAX_COMPLETION_TOKENS,
+      top_p: CHAT_TOP_P,
+    });
+    logger.log("Vision API response:", response);
 
     return response;
   }
