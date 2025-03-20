@@ -1,13 +1,17 @@
 import Groq from "groq-sdk";
+import axios from "axios";
+import ffmpeg from "fluent-ffmpeg";
 import { IModelService } from "./model.service.js";
 import {
   CHAT_MAX_COMPLETION_TOKENS,
   CHAT_MODEL,
   CHAT_TEMPERATURE,
   CHAT_TOP_P,
+  FILE_URI,
   VISION_CHAT_MODEL,
 } from "../config/config.js";
 import { logger } from "../utils/logger.js";
+import fs from "fs";
 
 export class GroqService extends IModelService {
   constructor(apiKey) {
@@ -88,5 +92,67 @@ export class GroqService extends IModelService {
     logger.log("Vision API response:", response);
 
     return response;
+  }
+
+  async speechToText(file_id, bot) {
+    try {
+      const file = await bot.getFile(file_id);
+      const audio_path = `${FILE_URI}${process.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+
+      const response = await axios({
+        method: "get",
+        url: audio_path,
+        responseType: "stream",
+      });
+
+      const localPathFile = "./temp_audio.ogg";
+      const writer = fs.createWriteStream(localPathFile);
+      response.data.pipe(writer);
+      await new Promise((resolve, reject) => {
+        writer.on("finish", resolve);
+        writer.on("error", reject);
+      });
+
+      const localPathFlacFile = "./temp_audio.flac";
+      await new Promise((resolve, reject) => {
+        ffmpeg(localPathFile)
+          .output(localPathFlacFile)
+          .audioCodec("flac")
+          .audioFrequency(16000)
+          .audioChannels(1)
+          .on("end", () => {
+            console.log("Konwersja OGG -> FLAC zakończona");
+            resolve();
+          })
+          .on("error", (err) => {
+            console.error("Błąd konwersji FFmpeg:", err);
+            reject(err);
+          })
+          .run();
+      });
+
+      const transcription = await this.groq.audio.transcriptions.create({
+        file: fs.createReadStream(localPathFlacFile),
+        model: "whisper-large-v3-turbo",
+        language: "pl",
+        temperature: 0.0,
+      });
+      console.log(transcription.text);
+
+      fs.unlinkSync(localPathFile);
+      fs.unlinkSync(localPathFlacFile);
+
+      return transcription.text;
+    } catch (error) {
+      logger.error(`Error processing audio: ${error.message}`);
+      throw new Error("Error processing audio");
+    } finally {
+      if (fs.existsSync(localPathFile)) {
+        fs.unlinkSync(localPathFile);
+      }
+      if (fs.existsSync(localPathFlacFile)) {
+        fs.unlinkSync(localPathFlacFile);
+      }
+    }
   }
 }
