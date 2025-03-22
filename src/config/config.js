@@ -13,3 +13,4 @@ export const CHAT_TOP_P = parseFloat(process.env.CHAT_TOP_P) || 1;
 export const VISION_CHAT_MODEL =
   process.env.VISION_MODEL || "llama-3.3-70b-versatile";
 export const FILE_URI = "https://api.telegram.org/file/bot";
+export const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
