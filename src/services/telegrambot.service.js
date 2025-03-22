@@ -4,7 +4,7 @@ import { MessageHandlerService } from "./messagehandler.service.js";
 import { CommandHandlerService } from "./command.service.js";
 
 export class TelegramBotService {
-  constructor(token, groqService) {
+  constructor(token, groqService, tavily) {
     logger.warn("Telegram token is not set in .env file");
     if (!token) {
       throw new Error("Telegram token is not set in .env file");
@@ -13,12 +13,20 @@ export class TelegramBotService {
       logger.warn("Groq API key is not set in .env file");
       throw new Error("Groq API key is not set in .env file");
     }
+
+    if (!tavily) {
+      logger.warn("Tavily token is not set in .env file");
+      throw new Error("Tavily token is not set in .env file");
+    }
+
     this.bot = new TelegramBot(token, { polling: true });
     this.groqService = groqService;
+    this.tavily = tavily;
     this.messageService = new MessageHandlerService(
       this.bot,
       this.groqService,
-      this
+      this,
+      this.tavily
     );
     this.commandHandler = new CommandHandlerService(this.bot);
     this.chatHistory = [];
